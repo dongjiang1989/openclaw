@@ -192,8 +192,8 @@ async function writeFixtureServer(
   html: string,
   resourceOrigin: string,
 ): Promise<void> {
-  const sdkMcpServerPath = require.resolve("@modelcontextprotocol/sdk/server/mcp.js");
-  const sdkStdioServerPath = require.resolve("@modelcontextprotocol/sdk/server/stdio.js");
+  const sdkMcpServerPath = require.resolve("@modelcontextprotocol/server");
+  const sdkStdioServerPath = require.resolve("@modelcontextprotocol/server/stdio");
   await fs.writeFile(
     serverPath,
     `#!/usr/bin/env node
@@ -201,17 +201,17 @@ import { McpServer } from ${JSON.stringify(sdkMcpServerPath)};
 import { StdioServerTransport } from ${JSON.stringify(sdkStdioServerPath)};
 const appUri = "ui://conformance/app";
 const server = new McpServer({ name: "mcp-app-conformance", version: "1.0.0" });
-const show = server.tool("show", "Show the conformance app", async () => ({
+const show = server.registerTool("show", { description: "Show the conformance app" }, async () => ({
   content: [{ type: "text", text: "initial-result" }],
   structuredContent: { value: "initial-result" },
 }));
 show.update({ _meta: { ui: { resourceUri: appUri } } });
-const appOnly = server.tool("app_companion", "App-only companion", async () => ({
+const appOnly = server.registerTool("app_companion", { description: "App-only companion" }, async () => ({
   content: [{ type: "text", text: "companion-called" }],
   structuredContent: { value: "companion-called" },
 }));
 appOnly.update({ _meta: { ui: { visibility: ["app"] } } });
-const modelOnly = server.tool("model_only", "Model-only tool", async () => ({
+const modelOnly = server.registerTool("model_only", { description: "Model-only tool" }, async () => ({
   content: [{ type: "text", text: "model-called" }],
 }));
 modelOnly.update({ _meta: { ui: { visibility: ["model"] } } });

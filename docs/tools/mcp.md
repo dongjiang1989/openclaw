@@ -93,6 +93,14 @@ The same `docs` server, written straight into config:
 
 An enabled server needs either a command (stdio) or a URL (SSE or Streamable HTTP). The exact server name `__proto__` is reserved; choose a different name. Setting `enabled: false` keeps the definition around without connecting it. Keep credentials out of config literals — store sensitive headers and environment values through the supported secret mechanisms.
 
+## Protocol compatibility
+
+OpenClaw negotiates the MCP protocol version per server:
+
+- Servers implementing the 2026-07-28 stateless spec are used without the legacy `initialize` handshake; each request carries the protocol version and client info in `_meta`, and no session id couples requests to a server instance.
+- Servers speaking a 2025-era protocol keep working through the legacy `initialize` handshake, selected automatically when a server does not support the stateless revision.
+- The browser tooling path stays on the legacy handshake for `chrome-devtools-mcp`, a known 2025-era server.
+
 ## Troubleshooting
 
 ### The server appears in Settings but exposes no tools
