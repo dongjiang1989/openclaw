@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { Client } from "@modelcontextprotocol/client";
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import type { ChromeMcpSnapshotNode } from "./chrome-mcp.snapshot.js";
 import type { BrowserTab } from "./client.js";
 import { BrowserProfileUnavailableError, BrowserTabNotFoundError } from "./errors.js";
@@ -234,7 +234,10 @@ async function createRealSession(
       name: "openclaw-browser",
       version: "0.0.0",
     },
-    {},
+    // Keep the default legacy (2025) connect: chrome-devtools-mcp is a known
+    // legacy server, and the 2026-07-28 auto probe would spawn a second
+    // `npx chrome-devtools-mcp` sibling that races the real instance for the
+    // Chrome debugging port.
   );
 
   const ready = (async () => {

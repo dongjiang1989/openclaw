@@ -1,7 +1,6 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { Client, type CallToolResult } from "@modelcontextprotocol/client";
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import type { OpenClawConfig } from "../config/config.js";
 import { logDebug, logWarn } from "../logger.js";
 import { loadEmbeddedPiMcpConfig } from "./embedded-pi-mcp.js";
@@ -16,6 +15,10 @@ type BundleMcpToolRuntime = {
   dispose: () => Promise<void>;
 };
 
+// Cap the 2026-07-28 era probe so legacy stdio servers that never answer
+// pre-initialize requests only delay startup by this much per server.
+const BUNDLE_MCP_VERSION_PROBE_TIMEOUT_MS = 3000;
+
 type BundleMcpSession = {
   serverName: string;
   client: Client;
@@ -28,14 +31,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 async function listAllTools(client: Client) {
-  const tools: Awaited<ReturnType<Client["listTools"]>>["tools"] = [];
-  let cursor: string | undefined;
-  do {
-    const page = await client.listTools(cursor ? { cursor } : undefined);
-    tools.push(...page.tools);
-    cursor = page.nextCursor;
-  } while (cursor);
-  return tools;
+  // v2 listTools() without a cursor auto-aggregates every page.
+  const listed = await client.listTools();
+  return listed.tools;
 }
 
 function toAgentToolResult(params: {
@@ -163,7 +161,15 @@ export async function createBundleMcpToolRuntime(params: {
           name: "openclaw-bundle-mcp",
           version: "0.0.0",
         },
-        {},
+        {
+          // Speak the 2026-07-28 stateless protocol when the server supports it
+          // (no initialize handshake), and fall back to the legacy 2025 handshake
+          // for older servers.
+          versionNegotiation: {
+            mode: "auto",
+            probe: { timeoutMs: BUNDLE_MCP_VERSION_PROBE_TIMEOUT_MS },
+          },
+        },
       );
       const session: BundleMcpSession = {
         serverName,
@@ -196,10 +202,10 @@ export async function createBundleMcpToolRuntime(params: {
               `Provided by bundle MCP server "${serverName}" (${describeStdioMcpServerLaunchConfig(launchConfig)}).`,
             parameters: tool.inputSchema,
             execute: async (_toolCallId, input) => {
-              const result = (await client.callTool({
+              const result = await client.callTool({
                 name: tool.name,
                 arguments: isRecord(input) ? input : {},
-              })) as CallToolResult;
+              });
               return toAgentToolResult({
                 serverName,
                 toolName: tool.name,

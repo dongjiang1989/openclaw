@@ -2,7 +2,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { writeBundleProbeMcpServer, writeClaudeBundle } from "./bundle-mcp.test-harness.js";
+import {
+  writeBundleProbeMcpServer,
+  writeBundleProbeMcpServerStateless,
+  writeClaudeBundle,
+} from "./bundle-mcp.test-harness.js";
 import { createBundleMcpToolRuntime } from "./pi-bundle-mcp-tools.js";
 
 const tempDirs: string[] = [];
@@ -105,6 +109,52 @@ describe("createBundleMcpToolRuntime", () => {
       });
       expect(result.details).toEqual({
         mcpServer: "configuredProbe",
+        mcpTool: "bundle_probe",
+      });
+    } finally {
+      await runtime.dispose();
+    }
+  });
+
+  it("connects to a stateless 2026-07-28 MCP server that rejects the legacy handshake", async () => {
+    // The probe server answers the legacy initialize handshake with
+    // unsupported-protocol-version, so a successful connection proves the
+    // client negotiated the modern (stateless) era.
+    const workspaceDir = await makeTempDir("openclaw-bundle-mcp-tools-");
+    const serverScriptPath = path.join(workspaceDir, "servers", "stateless-probe.mjs");
+    await writeBundleProbeMcpServerStateless(serverScriptPath);
+
+    const runtime = await createBundleMcpToolRuntime({
+      workspaceDir,
+      cfg: {
+        mcp: {
+          servers: {
+            statelessProbe: {
+              command: "node",
+              args: [serverScriptPath],
+              env: {
+                BUNDLE_PROBE_TEXT: "FROM-STATELESS",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    try {
+      expect(runtime.tools.map((tool) => tool.name)).toEqual(["bundle_probe"]);
+      const result = await runtime.tools[0].execute(
+        "call-stateless-probe",
+        {},
+        undefined,
+        undefined,
+      );
+      expect(result.content[0]).toMatchObject({
+        type: "text",
+        text: "FROM-STATELESS",
+      });
+      expect(result.details).toEqual({
+        mcpServer: "statelessProbe",
         mcpTool: "bundle_probe",
       });
     } finally {

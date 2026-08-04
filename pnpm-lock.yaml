@@ -59,9 +59,9 @@ importers:
       '@mariozechner/pi-tui':
         specifier: 0.61.1
         version: 0.61.1
-      '@modelcontextprotocol/sdk':
-        specifier: 1.27.1
-        version: 1.27.1(zod@4.3.6)
+      '@modelcontextprotocol/client':
+        specifier: 2.0.0
+        version: 2.0.0
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
@@ -180,6 +180,9 @@ importers:
       '@lit/context':
         specifier: ^1.1.6
         version: 1.1.6
+      '@modelcontextprotocol/server':
+        specifier: 2.0.0
+        version: 2.0.0
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6
@@ -487,6 +490,8 @@ importers:
       node-edge-tts:
         specifier: ^1.2.10
         version: 1.2.10
+
+  extensions/microsoft-foundry: {}
 
   extensions/minimax: {}
 
@@ -1952,6 +1957,14 @@ packages:
   '@mistralai/mistralai@1.14.1':
     resolution: {integrity: sha512-IiLmmZFCCTReQgPAT33r7KQ1nYo5JPdvGkrkZqA8qQ2qB1GHgs5LoP5K2ICyrjnpw2n8oSxMM/VP+liiKcGNlQ==}
 
+  '@modelcontextprotocol/client@2.0.0':
+    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/core@2.0.0':
+    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
+    engines: {node: '>=20'}
+
   '@modelcontextprotocol/sdk@1.27.1':
     resolution: {integrity: sha512-sr6GbP+4edBwFndLbM60gf07z0FQ79gaExpnsjMGePXqFcSSb7t6iscpjk9DhFhwd+mTEQrzNafGP8/iGGFYaA==}
     engines: {node: '>=18'}
@@ -1961,6 +1974,10 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
+
+  '@modelcontextprotocol/server@2.0.0':
+    resolution: {integrity: sha512-YhHWdHfpFMQfd0prsEnxKeS3Qz3ytIGmsS0sth4KDjnacIT7hxk6hXHkJ9KysxlkvTM+WZAtQbbcUhdoP4Hvtw==}
+    engines: {node: '>=20'}
 
   '@mozilla/readability@0.6.0':
     resolution: {integrity: sha512-juG5VWh4qAivzTAeMzvY9xs9HY5rAcr2E4I7tiSSCokRFi7XIZCAu92ZkSTsIj1OPceCifL3cpfteP3pDT9/QQ==}
@@ -8579,6 +8596,20 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@modelcontextprotocol/client@2.0.0':
+    dependencies:
+      '@modelcontextprotocol/core': 2.0.0
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.0.6
+      jose: 6.2.2
+      pkce-challenge: 5.0.1
+      zod: 4.3.6
+
+  '@modelcontextprotocol/core@2.0.0':
+    dependencies:
+      zod: 4.3.6
+
   '@modelcontextprotocol/sdk@1.27.1(zod@4.3.6)':
     dependencies:
       '@hono/node-server': 1.19.10(hono@4.12.8)
@@ -8600,6 +8631,12 @@ snapshots:
       zod-to-json-schema: 3.25.1(zod@4.3.6)
     transitivePeerDependencies:
       - supports-color
+    optional: true
+
+  '@modelcontextprotocol/server@2.0.0':
+    dependencies:
+      '@modelcontextprotocol/core': 2.0.0
+      zod: 4.3.6
 
   '@mozilla/readability@0.6.0': {}
 

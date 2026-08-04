@@ -14,6 +14,7 @@ Docs: https://docs.openclaw.ai
 - Agents/compaction: surface safeguard-specific cancel reasons and relabel benign manual `/compact` no-op cases as skipped instead of failed. (#51072) Thanks @afurm.
 - Agents/compaction: preserve the post-compaction AGENTS refresh on stale-usage preflight compaction for both immediate replies and queued followups. (#49479) Thanks @jared596.
 - CLI: add `openclaw config schema` to print the generated JSON schema for `openclaw.json`. (#54523) Thanks @kvokka.
+- MCP: migrate to the MCP 2.0 SDK split packages (`@modelcontextprotocol/client`/`server`) so configured stdio MCP servers implementing the 2026-07-28 stateless spec are used without the legacy initialize handshake, while older servers keep working through the automatic 2025 fallback. (#119294)
 
 ### Fixes
 

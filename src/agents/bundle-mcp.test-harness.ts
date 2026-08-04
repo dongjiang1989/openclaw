@@ -1,33 +1,65 @@
 import fs from "node:fs/promises";
-import { createRequire } from "node:module";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const require = createRequire(import.meta.url);
-const SDK_SERVER_MCP_PATH = require.resolve("@modelcontextprotocol/sdk/server/mcp.js");
-const SDK_SERVER_STDIO_PATH = require.resolve("@modelcontextprotocol/sdk/server/stdio.js");
-const SDK_CLIENT_INDEX_PATH = require.resolve("@modelcontextprotocol/sdk/client/index.js");
-const SDK_CLIENT_STDIO_PATH = require.resolve("@modelcontextprotocol/sdk/client/stdio.js");
+// Resolve the installed MCP v2 SDK entry points so generated fixture scripts can
+// import them by absolute path from temp dirs (bare specifiers would not resolve
+// outside the repo).
+const SERVER_INDEX_PATH = fileURLToPath(import.meta.resolve("@modelcontextprotocol/server"));
+const SERVER_STDIO_PATH = fileURLToPath(import.meta.resolve("@modelcontextprotocol/server/stdio"));
+const CLIENT_INDEX_PATH = fileURLToPath(import.meta.resolve("@modelcontextprotocol/client"));
+const CLIENT_STDIO_PATH = fileURLToPath(import.meta.resolve("@modelcontextprotocol/client/stdio"));
 
 export async function writeExecutable(filePath: string, content: string): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, content, { encoding: "utf-8", mode: 0o755 });
 }
 
-export async function writeBundleProbeMcpServer(filePath: string): Promise<void> {
-  await writeExecutable(
-    filePath,
-    `#!/usr/bin/env node
-import { McpServer } from ${JSON.stringify(SDK_SERVER_MCP_PATH)};
-import { StdioServerTransport } from ${JSON.stringify(SDK_SERVER_STDIO_PATH)};
-
-const server = new McpServer({ name: "bundle-probe", version: "1.0.0" });
-server.tool("bundle_probe", "Bundle MCP probe", async () => {
+const PROBE_TOOL_REGISTRATION = `const server = new McpServer({ name: "bundle-probe", version: "1.0.0" });
+server.registerTool("bundle_probe", { description: "Bundle MCP probe" }, async () => {
   return {
     content: [{ type: "text", text: process.env.BUNDLE_PROBE_TEXT ?? "missing-probe-text" }],
   };
 });
+`;
 
+/**
+ * Writes a probe MCP server built on the v2 SDK that serves the legacy
+ * (2025-era) protocol over stdio — the compatibility leg for existing
+ * user-configured MCP servers.
+ */
+export async function writeBundleProbeMcpServer(filePath: string): Promise<void> {
+  await writeExecutable(
+    filePath,
+    `#!/usr/bin/env node
+import { McpServer } from ${JSON.stringify(SERVER_INDEX_PATH)};
+import { StdioServerTransport } from ${JSON.stringify(SERVER_STDIO_PATH)};
+
+${PROBE_TOOL_REGISTRATION}
 await server.connect(new StdioServerTransport());
+`,
+  );
+}
+
+/**
+ * Writes a probe MCP server built on the v2 SDK that only accepts 2026-07-28
+ * (stateless) openings and rejects the legacy initialize handshake — used to
+ * prove the client negotiates the modern era end-to-end.
+ */
+export async function writeBundleProbeMcpServerStateless(filePath: string): Promise<void> {
+  await writeExecutable(
+    filePath,
+    `#!/usr/bin/env node
+import { McpServer } from ${JSON.stringify(SERVER_INDEX_PATH)};
+import { serveStdio } from ${JSON.stringify(SERVER_STDIO_PATH)};
+
+serveStdio(
+  () => {
+    ${PROBE_TOOL_REGISTRATION.replace(/^/gm, "    ").trimEnd()}
+    return server;
+  },
+  { legacy: "reject" },
+);
 `,
   );
 }
@@ -69,8 +101,8 @@ export async function writeFakeClaudeCli(filePath: string): Promise<void> {
     `#!/usr/bin/env node
 import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { Client } from ${JSON.stringify(SDK_CLIENT_INDEX_PATH)};
-import { StdioClientTransport } from ${JSON.stringify(SDK_CLIENT_STDIO_PATH)};
+import { Client } from ${JSON.stringify(CLIENT_INDEX_PATH)};
+import { StdioClientTransport } from ${JSON.stringify(CLIENT_STDIO_PATH)};
 
 function readArg(name) {
   const args = process.argv.slice(2);
@@ -109,6 +141,8 @@ const transport = new StdioClientTransport({
         ? server.workingDirectory
         : undefined,
 });
+// Default (legacy) connect on purpose: this fixture emulates an external
+// 2025-era host CLI talking to the bundle probe server.
 const client = new Client({ name: "fake-claude", version: "1.0.0" });
 await client.connect(transport);
 const tools = await client.listTools();

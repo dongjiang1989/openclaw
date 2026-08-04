@@ -1153,6 +1153,7 @@
                   "tools/llm-task",
                   "tools/lobster",
                   "tools/loop-detection",
+                  "tools/mcp",
                   "tools/pdf",
                   "tools/reactions",
                   "tools/thinking"
