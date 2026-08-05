@@ -97,8 +97,9 @@ An enabled server needs either a command (stdio) or a URL (SSE or Streamable HTT
 
 OpenClaw negotiates the MCP protocol version per server:
 
-- Servers implementing the 2026-07-28 stateless spec are used without the legacy `initialize` handshake; each request carries the protocol version and client info in `_meta`, and no session id couples requests to a server instance.
-- Servers speaking a 2025-era protocol keep working through the legacy `initialize` handshake, selected automatically when a server does not support the stateless revision.
+- HTTP and SSE servers implementing the 2026-07-28 stateless spec are used without the legacy `initialize` handshake; each request carries the protocol version and client info in `_meta`, and no session id couples requests to a server instance.
+- Stdio servers remain on the legacy 2025 `initialize` handshake in this release. Some stdio servers exit on any pre-initialize request, so OpenClaw does not probe them speculatively.
+- HTTP and SSE servers speaking a 2025-era protocol keep working through the legacy `initialize` handshake, selected automatically when a server does not support the stateless revision.
 - The browser tooling path stays on the legacy handshake for `chrome-devtools-mcp`, a known 2025-era server.
 
 ## Troubleshooting
